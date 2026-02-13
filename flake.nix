@@ -1,5 +1,5 @@
 {
-  description = "Reed's body - Ghost sync service";
+  description = "{{description}}";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -14,8 +14,8 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            elixir
-            erlang
+            elixir_1_18
+            erlang_27
           ];
 
           shellHook = ''
