@@ -1,0 +1,19 @@
+/_build/
+/deps/
+/*.ez
+/doc/
+.fetch
+erl_crash.dump
+*.beam
+
+# Coverage reports
+/cover/
+
+# Nix
+.nix-mix/
+.nix-hex/
+.direnv/
+
+# Environment
+.env
+.env.local
