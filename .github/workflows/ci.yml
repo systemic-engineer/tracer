@@ -1,3 +1,10 @@
+# CI workflow for {{module_name}}
+# Using Reed's reusable CI actions: https://github.com/reed/ci
+#
+# To use local actions instead (without publishing):
+# 1. Copy actions from ~/dev/ci/actions/ to .github/actions/
+# 2. Update uses: paths to ./.github/actions/elixir-*
+
 name: CI
 
 on:
@@ -8,38 +15,57 @@ on:
 
 jobs:
   test:
+    name: Test (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
     runs-on: ubuntu-latest
-    name: Test (Elixir ${{matrix.elixir}} / OTP ${{matrix.otp}})
 
     strategy:
+      fail-fast: false
       matrix:
-        otp: ["27.0"]
-        elixir: ["1.17", "1.18"]
+        include:
+          - elixir: "1.18"
+            otp: "27.0"
+          - elixir: "1.17"
+            otp: "27.0"
 
     steps:
       - uses: actions/checkout@v4
 
+      # Option 1: Use published actions (when available)
+      # - uses: reed/ci/actions/elixir-setup@main
+      #   with:
+      #     elixir-version: ${{ matrix.elixir }}
+      #     otp-version: ${{ matrix.otp }}
+      #
+      # - uses: reed/ci/actions/elixir-test@main
+
+      # Option 2: Inline setup (current approach)
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{matrix.otp}}
-          elixir-version: ${{matrix.elixir}}
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
 
-      - name: Restore dependencies cache
+      - name: Cache deps/
         uses: actions/cache@v4
         with:
-          path: deps
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: ${{ runner.os }}-mix-
+          path: deps/
+          key: v1-deps-elixir:${{ matrix.elixir }}-otp:${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            v1-deps-elixir:${{ matrix.elixir }}-otp:${{ matrix.otp }}-
 
       - name: Install dependencies
-        run: mix deps.get
+        run: |
+          mix local.rebar --force
+          mix local.hex --force
+          mix deps.get
 
-      - name: Check formatting
-        run: mix format --check-formatted
-
-      - name: Run Credo
-        run: mix credo --strict
+      - name: Cache _build/
+        uses: actions/cache@v4
+        with:
+          path: _build/
+          key: v1-build-elixir:${{ matrix.elixir }}-otp:${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            v1-build-elixir:${{ matrix.elixir }}-otp:${{ matrix.otp }}-
 
       - name: Compile
         run: mix compile --warnings-as-errors
@@ -47,12 +73,9 @@ jobs:
       - name: Run tests
         run: mix test
 
-      - name: Check test coverage
-        run: mix coveralls
-
   quality:
+    name: Quality Checks
     runs-on: ubuntu-latest
-    name: Code Quality
 
     steps:
       - uses: actions/checkout@v4
@@ -63,15 +86,68 @@ jobs:
           otp-version: "27.0"
           elixir-version: "1.18"
 
-      - name: Restore dependencies cache
+      - name: Cache deps/
         uses: actions/cache@v4
         with:
-          path: deps
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: ${{ runner.os }}-mix-
+          path: deps/
+          key: v1-deps-dev-elixir:1.18-otp:27.0-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            v1-deps-dev-elixir:1.18-otp:27.0-
 
       - name: Install dependencies
-        run: mix deps.get
+        run: |
+          mix local.rebar --force
+          mix local.hex --force
+          mix deps.get
 
-      - name: Run Credo (suggestions)
-        run: mix credo suggest --format=oneline
+      - name: Cache _build/
+        uses: actions/cache@v4
+        with:
+          path: _build/
+          key: v1-build-dev-elixir:1.18-otp:27.0-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            v1-build-dev-elixir:1.18-otp:27.0-
+
+      - name: Check formatting
+        run: mix format --check-formatted
+
+      - name: Run Credo
+        run: mix credo --strict
+
+  coverage:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27.0"
+          elixir-version: "1.18"
+
+      - name: Cache deps/
+        uses: actions/cache@v4
+        with:
+          path: deps/
+          key: v1-deps-test-elixir:1.18-otp:27.0-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            v1-deps-test-elixir:1.18-otp:27.0-
+
+      - name: Install dependencies
+        run: |
+          mix local.rebar --force
+          mix local.hex --force
+          mix deps.get
+
+      - name: Cache _build/
+        uses: actions/cache@v4
+        with:
+          path: _build/
+          key: v1-build-test-elixir:1.18-otp:27.0-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            v1-build-test-elixir:1.18-otp:27.0-
+
+      - name: Run coverage
+        run: mix coveralls
