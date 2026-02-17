@@ -5,6 +5,9 @@ Generic computation trace with visual tree rendering.
 `Tracer` records what ran, what went in, what came out, and any
 sub-steps — then renders the whole tree as a color-coded inspection output.
 
+Extracted from the trace pattern in [Babel](https://github.com/alexocode/babel),
+adapted for general use.
+
 ## Installation
 
 ```elixir
@@ -15,49 +18,97 @@ def deps do
 end
 ```
 
-## Usage
+## Rendering
+
+The `Inspect` implementation renders traces as a structured tree.
+Colors are applied when the terminal supports them — green for `OK`, red for `ERROR`.
+
+### Simple trace
 
 ```elixir
-# Build a trace manually
-trace = Tracer.new(:parse_int, "42", {:ok, 42})
-Tracer.ok?(trace)     # => true
-Tracer.result(trace)  # => {:ok, 42}
-
-# Nested traces — full computation tree
-inner = Tracer.new(:validate_range, 42, {:ok, 42})
-outer = Tracer.new(:parse_and_validate, "42", {:ok, 42}, [inner])
-
-# Inspect with depth control
-Tracer.inspect(outer, depth: :infinity)
-# Tracer<OK> {
-#   data = "42"
-#   :parse_and_validate
-#   | :validate_range |=< 42 |=> 42
-#
-#   |=> 42
-# }
-
-# Only show error branches
-Tracer.inspect(outer, depth: :error)
-
-# Find failing traces anywhere in the tree
-Tracer.find(outer, &Tracer.error?/1)
-
-# Find the root causes (leaf errors)
-Tracer.root_causes(outer)
+trace = Tracer.new(:double, 3, {:ok, 6})
+Tracer.inspect(trace)
 ```
 
-## Inspect Options
+```
+Tracer<OK> {
+  data = 3
+
+  :double
+  |=> 6
+}
+```
+
+### Nested trace — full tree (`depth: :infinity`)
 
 ```elixir
-# depth: 0          — top level only (default)
-# depth: N          — show N levels deep
-# depth: :error     — only error branches
-# depth: :infinity  — the full tree
-inspect(trace, custom_options: [depth: :infinity])
+inner = Tracer.new(:validate_range, 42, {:ok, 42})
+outer = Tracer.new(:parse_and_validate, "42", {:ok, 42}, [inner])
+Tracer.inspect(outer, depth: :infinity)
+```
 
-# Or use the shortcut
-Tracer.inspect(trace, depth: :infinity)
+```
+Tracer<OK> {
+  data = "42"
+
+  :parse_and_validate
+  |
+  | :validate_range
+  |  |=< 42
+  |  |=> 42
+  |
+  |=> 42
+}
+```
+
+### Error trace — only error branches (`depth: :error`)
+
+```elixir
+bad  = Tracer.new(:validate_range, -1, {:error, :out_of_range})
+good = Tracer.new(:parse_int, "-1", {:ok, -1})
+outer = Tracer.new(:parse_and_validate, "-1", {:error, [:out_of_range]}, [good, bad])
+Tracer.inspect(outer, depth: :error)
+```
+
+```
+Tracer<ERROR> {
+  data = "-1"
+
+  :parse_and_validate
+  |
+  | ... traces omitted (1) ...
+  |
+  | :validate_range
+  |  |=< -1
+  |  |=> {:error, :out_of_range}
+  |
+  |=> {:error, [:out_of_range]}
+}
+```
+
+## API
+
+```elixir
+# Construct
+Tracer.new(step, input, output)
+Tracer.new(step, input, output, nested_traces)
+
+# Status — ok? when output is not false/:error/{:error,_}
+Tracer.ok?(trace)     # => boolean
+Tracer.error?(trace)  # => boolean
+Tracer.result(trace)  # => {:ok, value} | {:error, reason}
+
+# Navigate the tree
+Tracer.find(trace, &Tracer.error?/1)    # => [Tracer.t()]
+Tracer.root_causes(trace)               # => [Tracer.t()] — leaf errors only
+Tracer.reduce(trace, 0, fn _, n -> n + 1 end)  # => count of all traces
+
+# Render
+Tracer.inspect(trace)                         # top level only (default)
+Tracer.inspect(trace, depth: :infinity)       # full tree
+Tracer.inspect(trace, depth: :error)          # error branches only
+Tracer.inspect(trace, depth: 2)               # up to 2 levels deep
+inspect(trace, custom_options: [depth: 1])    # via standard Inspect opts
 ```
 
 ## Building Nested Traces
@@ -72,6 +123,13 @@ Tracer.inspect(trace, depth: :infinity)
 
 Tracer.new(operator, input, result, nested)
 ```
+
+## Used By
+
+- [Babel](https://github.com/alexocode/babel) — data transformation pipelines
+  (the trace pattern originated here)
+- [Brex](https://github.com/alexocode/brex) — composable business rules
+  (planned: rule evaluation tree visualization)
 
 ## License
 
