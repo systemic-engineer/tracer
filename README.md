@@ -1,156 +1,78 @@
-# Elixir Project Template
+# Tracer
 
-A production-ready Elixir project template with best practices baked in.
+Generic computation trace with visual tree rendering.
 
-## Features
+`Tracer` records what ran, what went in, what came out, and any
+sub-steps — then renders the whole tree as a color-coded inspection output.
 
-- **Quality tooling**: Credo with strict checks, ExCoveralls for test coverage
-- **CI/CD ready**: GitHub Actions workflow with formatting, linting, tests, and coverage
-- **100% test coverage**: Configured with strict coverage requirements
-- **Modern Elixir**: Set up for Elixir 1.17+ and OTP 27
-- **Nix support**: Includes flake.nix for reproducible development environments
+## Installation
 
-## Quick Start
-
-```bash
-# Clone template
-git clone ~/dev/projects/_templates/elixir my_project
-cd my_project
-
-# Replace placeholders
-./setup.sh my_app MyApp "My App Description"
-
-# Or manually replace:
-# - {{app_name}} → your_app (snake_case)
-# - {{module_name}} → YourApp (PascalCase)
-# - {{description}} → Your project description
-```
-
-## What's Included
-
-### Configuration Files
-- `.credo.exs` - Production-grade linting rules
-- `.formatter.exs` - Code formatting (120 char line length)
-- `coveralls.json` - 100% test coverage requirement
-- `.gitignore` - Standard Elixir + Nix ignores
-
-### CI/CD
-- `.github/workflows/ci.yml` - Complete CI pipeline
-  - Format checking
-  - Credo linting (strict mode)
-  - Compilation with warnings-as-errors
-  - Test execution
-  - Coverage reporting
-
-### Project Structure
-```
-├── .github/workflows/
-│   └── ci.yml
-├── config/
-│   ├── config.exs
-│   └── test.exs
-├── lib/
-│   └── {{app_name}}.ex
-├── test/
-│   ├── {{app_name}}_test.exs
-│   └── test_helper.exs
-├── .credo.exs
-├── .formatter.exs
-├── .gitignore
-├── coveralls.json
-├── mix.exs
-└── flake.nix
-```
-
-## Template Setup Script
-
-The `setup.sh` script automates placeholder replacement:
-
-```bash
-./setup.sh <app_name> <ModuleName> "Description"
-```
-
-Example:
-```bash
-./setup.sh my_api MyApi "A REST API service"
-```
-
-## Manual Setup
-
-If you prefer manual setup:
-
-1. Replace `{{app_name}}` with your app name (snake_case)
-2. Replace `{{module_name}}` with your module name (PascalCase)
-3. Replace `{{description}}` with your project description
-4. Update dependencies in `mix.exs` as needed
-5. Remove template README and create your own
-
-Files to update:
-- `mix.exs`
-- `lib/{{app_name}}.ex` (rename file)
-- `test/{{app_name}}_test.exs` (rename file)
-- `config/config.exs` (if using app-specific config)
-
-## After Setup
-
-```bash
-# Get dependencies
-mix deps.get
-
-# Run tests
-mix test
-
-# Run linting
-mix credo --strict
-
-# Check formatting
-mix format --check-formatted
-
-# Run coverage
-mix coveralls
-```
-
-## CI/CD
-
-The template includes a GitHub Actions workflow that runs on push and PR:
-- Format checking
-- Credo linting (strict mode)
-- Compilation with warnings-as-errors
-- Tests
-- Coverage reporting
-
-## Customization
-
-### Adjust Coverage Requirements
-
-Edit `coveralls.json`:
-```json
-{
-  "coverage_options": {
-    "minimum_coverage": 90  // Change from 100
-  }
-}
-```
-
-### Modify Credo Rules
-
-Edit `.credo.exs` to enable/disable specific checks in the `enabled` or `disabled` lists.
-
-### Add Dependencies
-
-Common additions:
 ```elixir
-# Web framework
-{:plug_cowboy, "~> 2.7"},
+def deps do
+  [
+    {:tracer, "~> 0.1", github: "systemic-engineer/tracer"}
+  ]
+end
+```
 
-# Database
-{:ecto_sql, "~> 3.12"},
-{:postgrex, ">= 0.0.0"},
+## Usage
 
-# JSON
-{:jason, "~> 1.4"}
+```elixir
+# Build a trace manually
+trace = Tracer.new(:parse_int, "42", {:ok, 42})
+Tracer.ok?(trace)     # => true
+Tracer.result(trace)  # => {:ok, 42}
+
+# Nested traces — full computation tree
+inner = Tracer.new(:validate_range, 42, {:ok, 42})
+outer = Tracer.new(:parse_and_validate, "42", {:ok, 42}, [inner])
+
+# Inspect with depth control
+Tracer.inspect(outer, depth: :infinity)
+# Tracer<OK> {
+#   data = "42"
+#   :parse_and_validate
+#   | :validate_range |=< 42 |=> 42
+#
+#   |=> 42
+# }
+
+# Only show error branches
+Tracer.inspect(outer, depth: :error)
+
+# Find failing traces anywhere in the tree
+Tracer.find(outer, &Tracer.error?/1)
+
+# Find the root causes (leaf errors)
+Tracer.root_causes(outer)
+```
+
+## Inspect Options
+
+```elixir
+# depth: 0          — top level only (default)
+# depth: N          — show N levels deep
+# depth: :error     — only error branches
+# depth: :infinity  — the full tree
+inspect(trace, custom_options: [depth: :infinity])
+
+# Or use the shortcut
+Tracer.inspect(trace, depth: :infinity)
+```
+
+## Building Nested Traces
+
+`Tracer.Nesting` helps collect traces while evaluating sub-steps:
+
+```elixir
+{nested, result} =
+  Tracer.Nesting.traced_map(clauses, fn clause ->
+    Tracer.new(clause, input, evaluate(clause, input))
+  end)
+
+Tracer.new(operator, input, result, nested)
 ```
 
 ## License
 
-This template is provided as-is for use in your projects.
+MIT — see [LICENSE](LICENSE).

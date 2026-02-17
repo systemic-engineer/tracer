@@ -1,5 +1,5 @@
 import Config
 
 # Test-specific configuration
-config :{{app_name}},
+config :tracer,
   env: :test

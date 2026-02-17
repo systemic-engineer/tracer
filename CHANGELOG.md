@@ -1,65 +1,34 @@
 # Changelog
 
-All notable changes to this template will be documented in this file.
+All notable changes to this project will be documented in this file.
 
-## [0.1.0] - 2026-02-13
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.0] - 2026-02-17
 
 ### Added
-- Initial template creation
-- Production-grade Credo configuration from 7Mind backend patterns
-- ExCoveralls with 100% coverage requirement
-- GitHub Actions CI pipeline with:
-  - Format checking
-  - Credo linting (strict mode)
-  - Compilation with warnings-as-errors
-  - Test execution
-  - Coverage reporting
-  - Matrix testing (Elixir 1.17, 1.18 on OTP 27)
-- Automated setup.sh script for quick project initialization
-- Nix flake for reproducible development environments
-- Comprehensive documentation:
-  - README.md - Quick start guide
-  - TEMPLATE_USAGE.md - Detailed usage instructions
-  - Inline comments in all config files
 
-### Configuration Files
-- `.credo.exs` - Strict linting with 95+ enabled checks
-- `.formatter.exs` - 120-character line length
-- `coveralls.json` - 100% coverage minimum
-- `.gitignore` - Standard Elixir + Nix ignores
-- `.gitattributes` - Proper Elixir diff handling
-- `flake.nix` - Nix development shell
+- `Tracer` struct with `step`, `input`, `output`, `nested` fields. [@systemic-engineer]
+- `Tracer.new/4` constructor. [@systemic-engineer]
+- `Tracer.ok?/1` and `Tracer.error?/1` — status detection from output value conventions. [@systemic-engineer]
+- `Tracer.result/1` — normalizes any output to `{:ok, value}` or `{:error, reason}`. [@systemic-engineer]
+- `Tracer.find/2` — recursive predicate search over the trace tree. [@systemic-engineer]
+- `Tracer.reduce/3` — fold over all traces in the tree. [@systemic-engineer]
+- `Tracer.root_causes/1` — finds leaf error traces (the true sources of failure). [@systemic-engineer]
+- `Tracer.inspect/2` — shortcut for `inspect/2` with `custom_options`. [@systemic-engineer]
+- `Inspect` implementation with color-coded tree rendering. [@systemic-engineer]
+  - `depth: 0` — top level only (default)
+  - `depth: N` — show N levels deep
+  - `depth: :error` — only error branches
+  - `depth: :infinity` — the full tree
+- `Tracer.Nesting` — utilities for collecting traces during computation. [@systemic-engineer]
+  - `traced_map/2` — map over an enumerable, collecting traces and results.
+  - `traced_reduce_while/5` — like `traced_map/2` with early termination.
+  - `collect_results/2`, `collect_oks/2`, `collect_errors/2` — result aggregation.
+  - `reverse_results/1` — finalize step for accumulated results.
 
-### Features
-- Template placeholder system ({{app_name}}, {{module_name}}, {{description}})
-- Automated file renaming in setup script
-- Production-ready from day one philosophy
-- Comprehensive quality gates in CI
-
-### Template Structure
-```
-elixir/
-├── .github/workflows/ci.yml
-├── config/
-│   ├── config.exs
-│   └── test.exs
-├── lib/app.ex
-├── test/
-│   ├── app_test.exs
-│   └── test_helper.exs
-├── Configuration files (.credo.exs, .formatter.exs, etc.)
-├── Documentation (README.md, TEMPLATE_USAGE.md)
-└── setup.sh
-```
-
-### Research
-Evaluated Elixir template generation tools:
-- mix_generator/mix_template
-- Exgen
-- gen_template_project
-
-Chose simple git-based approach for:
-- Simplicity and transparency
-- No additional tooling dependencies
-- Easy customization
-- Universal compatibility
+[Unreleased]: https://github.com/systemic-engineer/tracer/compare/v0.1.0...main
+[0.1.0]: https://github.com/systemic-engineer/tracer/releases/tag/v0.1.0

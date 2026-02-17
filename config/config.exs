@@ -1,7 +1,7 @@
 import Config
 
 # Configure your application here
-config :{{app_name}},
+config :tracer,
   env: config_env()
 
 # Import environment specific config

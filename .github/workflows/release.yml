@@ -1,0 +1,24 @@
+# Release workflow for {{module_name}}
+# Publishes to Hex.pm when a GitHub release is published.
+#
+# Requires: HEX_API_KEY secret set in repository settings.
+#
+# This workflow uses `write-version-file: false` because the template
+# manages version in mix.exs. Set to true if you switch to reading
+# version from a `version` file.
+
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    name: Publish to Hex.pm
+    uses: systemic-engineer/ci/.github/workflows/hex-publish.yml@main
+    with:
+      elixir-version: "1.18"
+      otp-version: "27.0"
+    secrets:
+      hex-api-key: ${{ secrets.HEX_API_KEY }}

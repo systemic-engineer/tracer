@@ -1,4 +1,4 @@
-# Credo configuration for {{module_name}}
+# Credo configuration for Tracer
 # Production-grade quality checks from day one
 
 %{
