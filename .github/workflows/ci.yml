@@ -24,7 +24,7 @@ jobs:
             otp: "27.0"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: systemic-engineer/ci/actions/elixir-setup@main
         with:
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: systemic-engineer/ci/actions/elixir-setup@main
         with:
@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: systemic-engineer/ci/actions/elixir-setup@main
         with:
